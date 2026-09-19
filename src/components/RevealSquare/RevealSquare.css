@@ -1,0 +1,28 @@
+.reveal-square {
+  position: absolute;
+  aspect-ratio: 1 / 1;
+}
+
+.reveal-square__back,
+.reveal-square__front {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.reveal-square__back {
+  pointer-events: none;
+}
+
+.reveal-square__front {
+  cursor: grab;
+  touch-action: none;
+  will-change: transform;
+}
+
+.reveal-square__front:active {
+  cursor: grabbing;
+}

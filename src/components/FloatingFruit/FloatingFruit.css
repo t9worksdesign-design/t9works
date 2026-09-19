@@ -1,0 +1,51 @@
+.floating-fruit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+  touch-action: none;
+  cursor: grab;
+}
+
+.floating-fruit:active {
+  cursor: grabbing;
+}
+
+.floating-fruit__image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  transition: transform 0.18s ease;
+}
+
+.floating-fruit__label {
+  position: absolute;
+  bottom: -2.6em;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--ink-quiet);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .floating-fruit:hover .floating-fruit__label {
+    opacity: 1;
+  }
+
+  .floating-fruit:hover .floating-fruit__image {
+    transform: scale(1.1);
+  }
+
+  .floating-fruit:hover .floating-fruit__label {
+    transform: translate(-50%, 4px);
+  }
+}

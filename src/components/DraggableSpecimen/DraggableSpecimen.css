@@ -1,0 +1,16 @@
+.draggable-specimen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: clamp(64px, 9vw, 120px);
+  height: auto;
+  object-fit: contain;
+  cursor: grab;
+  touch-action: none;
+  will-change: transform;
+  z-index: 1;
+}
+
+.draggable-specimen:active {
+  cursor: grabbing;
+}

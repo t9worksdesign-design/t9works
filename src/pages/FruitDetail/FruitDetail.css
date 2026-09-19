@@ -1,0 +1,49 @@
+.fruit-detail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: clamp(16px, 2.5vh, 28px);
+}
+
+.fruit-detail--missing {
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.fruit-detail__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-quiet);
+}
+
+.fruit-detail__back:hover {
+  color: var(--ink);
+}
+
+.fruit-detail__siblings {
+  display: flex;
+  gap: clamp(16px, 2vw, 28px);
+}
+
+.fruit-detail__siblings button {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-quiet);
+}
+
+.fruit-detail__siblings button:hover {
+  color: var(--ink);
+}
+
+.fruit-detail__stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  padding: clamp(20px, 4vw, 48px);
+}
