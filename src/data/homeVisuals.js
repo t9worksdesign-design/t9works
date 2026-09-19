@@ -1,7 +1,10 @@
-// Layout for the home screen's texture squares, read off the reference
-// composition and converted to percentages of `.home__stage` (a fixed
-// 590:501 box centered inside the hero — see Home.jsx) so positions and
-// the square aspect ratio stay correct at any viewport size.
+// Layout for the home screen's texture squares, positioned by percentage
+// directly against `.home__hero` so the composition fills the hero edge
+// to edge on any screen (see Home.jsx / Home.css — no letterboxing).
+// `y` values are stretched so the lowest square's bottom edge lands near
+// 92% of the hero height instead of the ~81% in the original reference,
+// so the composition uses the full vertical space instead of leaving a
+// dead band at the bottom.
 // `textureImage` sits on top and is draggable; dragging it aside reveals
 // `revealImage` underneath at the same spot.
 export const homeVisuals = [
@@ -16,7 +19,7 @@ export const homeVisuals = [
   {
     id: 'yellow',
     x: 24.6,
-    y: 19,
+    y: 22.2,
     size: 14,
     textureImage: '/images/home/yellow/texture.png',
     revealImage: '/images/home/yellow/reveal.png',
@@ -24,7 +27,7 @@ export const homeVisuals = [
   {
     id: 'orange',
     x: 11.9,
-    y: 42.9,
+    y: 50,
     size: 14,
     textureImage: '/images/home/orange/texture.png',
     revealImage: '/images/home/orange/reveal.png',
@@ -32,7 +35,7 @@ export const homeVisuals = [
   {
     id: 'green',
     x: 51.7,
-    y: 51.9,
+    y: 60.5,
     size: 14,
     textureImage: '/images/home/green/texture.png',
     revealImage: '/images/home/green/reveal.png',
@@ -40,7 +43,7 @@ export const homeVisuals = [
   {
     id: 'purple',
     x: 81.4,
-    y: 66.9,
+    y: 78,
     size: 14,
     textureImage: '/images/home/purple/texture.png',
     revealImage: '/images/home/purple/reveal.png',
