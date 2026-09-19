@@ -3,6 +3,7 @@
 :root {
   --sidebar-width: clamp(140px, 14vw, 220px);
   --content-pad: clamp(24px, 4vw, 64px);
+  --mobile-bar-height: 56px;
   --ink: #111111;
   --ink-quiet: #8a8a8a;
   color-scheme: light;
@@ -60,4 +61,13 @@ img {
   padding: clamp(28px, 5vh, 56px) var(--content-pad);
   display: flex;
   flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .app-content {
+    margin-left: 0;
+    min-height: calc(100vh - var(--mobile-bar-height));
+    margin-top: var(--mobile-bar-height);
+    padding: 20px;
+  }
 }

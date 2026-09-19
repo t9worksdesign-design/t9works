@@ -9,6 +9,13 @@
   flex-direction: column;
   gap: clamp(36px, 6vh, 64px);
   z-index: 10;
+  background: #ffffff;
+}
+
+.sidebar__bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
 }
 
 .sidebar__title {
@@ -16,6 +23,16 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   line-height: 1.6;
+}
+
+.sidebar__toggle {
+  display: none;
+}
+
+.sidebar__links {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(36px, 6vh, 64px);
 }
 
 .sidebar__group {
@@ -61,4 +78,63 @@
 
 .sidebar__link.active::before {
   background: var(--ink);
+}
+
+/* Mobile: fixed-height top bar with a hamburger toggle instead of the
+   full-height side column. The link list becomes a dropdown panel that
+   only takes space when open. */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    height: auto;
+    flex-direction: column;
+    padding: 0;
+    gap: 0;
+  }
+
+  .sidebar__bar {
+    align-items: center;
+    height: var(--mobile-bar-height);
+    padding: 0 20px;
+  }
+
+  .sidebar__toggle {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 22px;
+    height: 22px;
+  }
+
+  .sidebar__toggle span {
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: var(--ink);
+  }
+
+  .sidebar__links {
+    max-height: 0;
+    overflow: hidden;
+    gap: 0;
+    padding: 0 20px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    background: #ffffff;
+  }
+
+  .sidebar--open .sidebar__links {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 8px 20px 24px;
+  }
+
+  .sidebar__links .sidebar__group {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 16px;
+    width: 100%;
+    padding-top: 16px;
+  }
 }
