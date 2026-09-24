@@ -15,7 +15,7 @@ export default function Category() {
       <h1 className="category-page__title">{color.toUpperCase()}</h1>
       <div className="category-page__canvas">
         {/* key forces a clean physics-engine remount whenever the color changes */}
-        <PhysicsCanvas key={color} fruits={fruits} onFruitClick={handleFruitClick} />
+        <PhysicsCanvas key={color} fruits={fruits} onFruitClick={handleFruitClick} ambientDrift />
       </div>
     </div>
   );

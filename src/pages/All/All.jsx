@@ -12,7 +12,7 @@ export default function All() {
   return (
     <div className="all-page">
       <div className="all-page__canvas">
-        <PhysicsCanvas fruits={fruits} onFruitClick={handleFruitClick} randomLayout />
+        <PhysicsCanvas fruits={fruits} onFruitClick={handleFruitClick} randomLayout ambientDrift />
       </div>
     </div>
   );

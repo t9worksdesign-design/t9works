@@ -38,7 +38,7 @@
 .home__credit {
   margin: 0;
   font-weight: 700;
-  font-size: 12px;
+  font-size: clamp(14px, 1.1vw, 18px);
   letter-spacing: 0.05em;
   color: var(--ink);
 }

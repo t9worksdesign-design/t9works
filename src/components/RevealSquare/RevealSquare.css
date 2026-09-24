@@ -3,26 +3,63 @@
   aspect-ratio: 1 / 1;
 }
 
-.reveal-square__back,
-.reveal-square__front {
+.reveal-square__back {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.reveal-square__back {
   pointer-events: none;
 }
 
 .reveal-square__front {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   cursor: grab;
   touch-action: none;
   will-change: transform;
+  overflow: visible;
 }
 
-.reveal-square__front:active {
+.reveal-square__front:active,
+.reveal-square__front--dragging {
   cursor: grabbing;
+}
+
+.reveal-square__front-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-square__front-img {
+    animation: reveal-square-wiggle 4.8s ease-in-out infinite;
+  }
+
+  .reveal-square__front--dragging .reveal-square__front-img {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes reveal-square-wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(-2deg);
+  }
+  55% {
+    transform: rotate(2deg);
+  }
+  80% {
+    transform: rotate(-1deg);
+  }
 }

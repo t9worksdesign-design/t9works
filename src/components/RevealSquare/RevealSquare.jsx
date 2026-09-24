@@ -6,8 +6,14 @@ import './RevealSquare.css';
 // Movement is clamped to the nearest `.home__hero` ancestor, not this
 // square's own small box, so the piece can be dragged freely around
 // the whole home screen.
+//
+// The draggable position (translate3d, set imperatively below) lives on
+// `.reveal-square__front`; the idle wiggle (a CSS `rotate` animation)
+// lives on the `<img>` inside it. Keeping them on separate elements
+// means the animation's `transform` never fights the drag position.
 export default function RevealSquare({ id, x, y, size, textureImage, revealImage }) {
   const frontRef = useRef(null);
+  const wiggleDelay = (id.charCodeAt(0) % 10) * -0.4; // stagger so squares don't sync up
 
   const handlePointerDown = (e) => {
     const el = frontRef.current;
@@ -23,6 +29,7 @@ export default function RevealSquare({ id, x, y, size, textureImage, revealImage
     const pointerStartY = e.clientY;
 
     el.style.zIndex = '10';
+    el.classList.add('reveal-square__front--dragging');
 
     const handleMove = (moveEvent) => {
       const heroRect = heroEl.getBoundingClientRect();
@@ -40,6 +47,7 @@ export default function RevealSquare({ id, x, y, size, textureImage, revealImage
     };
 
     const handleUp = () => {
+      el.classList.remove('reveal-square__front--dragging');
       window.removeEventListener('pointermove', handleMove);
       window.removeEventListener('pointerup', handleUp);
       window.removeEventListener('pointercancel', handleUp);
@@ -53,14 +61,19 @@ export default function RevealSquare({ id, x, y, size, textureImage, revealImage
   return (
     <div className="reveal-square" style={{ left: `${x}%`, top: `${y}%`, width: `${size}%` }}>
       <img src={revealImage} alt="" className="reveal-square__back" draggable={false} />
-      <img
+      <div
         ref={frontRef}
-        src={textureImage}
-        alt={`${id} texture`}
         className="reveal-square__front"
-        draggable={false}
         onPointerDown={handlePointerDown}
-      />
+      >
+        <img
+          src={textureImage}
+          alt={`${id} texture`}
+          className="reveal-square__front-img"
+          draggable={false}
+          style={{ animationDelay: `${wiggleDelay}s` }}
+        />
+      </div>
     </div>
   );
 }

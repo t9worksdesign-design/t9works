@@ -27,9 +27,9 @@ export default function Sidebar() {
     <nav className={`sidebar ${isOpen ? 'sidebar--open' : ''}`} aria-label="Main navigation">
       <div className="sidebar__bar">
         <NavLink to="/" className="sidebar__title">
-          BENEATH
+          Beneath,
           <br />
-          THE PEEL
+          the Peel.
         </NavLink>
 
         <button

@@ -19,10 +19,11 @@
 }
 
 .sidebar__title {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  line-height: 1.6;
+  font-family: 'Pretendard Variable', 'Pretendard', sans-serif;
+  font-size: clamp(15px, 1.2vw, 20px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
 }
 
 .sidebar__toggle {

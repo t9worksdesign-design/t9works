@@ -7,22 +7,36 @@ const { Engine, Runner, World, Bodies, Body, Events } = Matter;
 
 const CLICK_DIST_THRESHOLD = 6; // px — below this, a pointerdown+up is a click, not a drag
 const CLICK_TIME_THRESHOLD = 600; // ms
-const MAX_ANGULAR_VELOCITY = 0.18;
-const SPIN_FROM_RELEASE = 0.035; // converts release vx into a natural-feeling flick spin
+const MAX_ANGULAR_VELOCITY = 0.18; // hard safety ceiling checked every frame
+const SPIN_FROM_RELEASE = 0.035; // converts release vx into a flick spin, before its own cap
+const RELEASE_SPIN_MAX = 0.07; // release flicks spin noticeably less than the old full ceiling
 const MAX_RELEASE_SPEED = 22;
 const WALL_THICKNESS = 100;
 const HISTORY_WINDOW_MS = 120;
+const DRIFT_SPEED = 0.9; // px/frame the ambient drift steers each body toward
+const DRIFT_STEER_GAIN = 0.00025; // gentle — collisions should dominate, not fight this
+const DRIFT_CHANGE_MIN_MS = 3000; // fallback: pick a fresh heading if nothing bumps it for a while
+const DRIFT_CHANGE_MAX_MS = 6000;
+const AMBIENT_SPIN_MAX = 0.035; // ambient drift's collision-triggered spin ceiling
+const DRAG_SHOVE_MIN_SPEED = 2; // floor so a slow drag still gives a felt shove
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-// Same base-unit formula everywhere (category pages and ALL) so a given
-// fruit's `scale` reads as the same physical size no matter which page
-// it's viewed on.
-function computeSize(width, height) {
-  const base = width / 3.4;
-  return clamp(Math.min(base, height * 0.5), 56, 360);
+function randomSpin() {
+  return (Math.random() < 0.5 ? -1 : 1) * AMBIENT_SPIN_MAX * (0.35 + Math.random() * 0.65);
+}
+
+// Category pages (3 fruits) can afford to run big. ALL (15 fruits) needs a
+// smaller base unit or it overflows/crowds smaller laptop screens once each
+// fruit's own `scale` is applied on top. The `max` ceilings scale the same
+// formula up for big desktop monitors instead of capping out small.
+function computeSize(width, height, count) {
+  const isFewFruits = count <= 3;
+  const base = width / (isFewFruits ? 3.4 : 6);
+  const max = isFewFruits ? 560 : 340;
+  return clamp(Math.min(base, height * 0.5), 56, max);
 }
 
 function fruitScale(fruit) {
@@ -31,7 +45,7 @@ function fruitScale(fruit) {
 
 function buildWalls(width, height) {
   const t = WALL_THICKNESS;
-  const opts = { isStatic: true, restitution: 0.4, friction: 0.05, label: 'wall' };
+  const opts = { isStatic: true, restitution: 0.65, friction: 0.05, label: 'wall' };
   return [
     Bodies.rectangle(width / 2, -t / 2, width + t * 2, t, opts),
     Bodies.rectangle(width / 2, height + t / 2, width + t * 2, t, opts),
@@ -67,7 +81,12 @@ function initialPositions(fruits, width, height, size, randomLayout) {
   });
 }
 
-export default function PhysicsCanvas({ fruits, onFruitClick, randomLayout = false }) {
+export default function PhysicsCanvas({
+  fruits,
+  onFruitClick,
+  randomLayout = false,
+  ambientDrift = false,
+}) {
   const containerRef = useRef(null);
   const elementRefs = useRef(new Map());
   const bodiesRef = useRef(new Map());
@@ -75,6 +94,7 @@ export default function PhysicsCanvas({ fruits, onFruitClick, randomLayout = fal
   const dragRef = useRef(null);
   const sizeRef = useRef(96); // canvas base unit (px)
   const fruitSizesRef = useRef({}); // id -> rendered px size (base * fruit.scale)
+  const canvasSizeRef = useRef({ width: 0, height: 0 });
   const [fruitSizes, setFruitSizes] = useState({});
 
   useEffect(() => {
@@ -82,10 +102,11 @@ export default function PhysicsCanvas({ fruits, onFruitClick, randomLayout = fal
     const rect = container.getBoundingClientRect();
     const width = rect.width || window.innerWidth;
     const height = rect.height || window.innerHeight;
+    canvasSizeRef.current = { width, height };
 
     const engine = Engine.create({ gravity: { x: 0, y: 0 } });
 
-    const initialSize = computeSize(width, height);
+    const initialSize = computeSize(width, height, fruits.length);
     sizeRef.current = initialSize;
 
     const initialFruitSizes = {};
@@ -98,7 +119,7 @@ export default function PhysicsCanvas({ fruits, onFruitClick, randomLayout = fal
     const placements = initialPositions(fruits, width, height, initialSize, randomLayout);
     const bodies = placements.map(({ id, x, y }) =>
       Bodies.circle(x, y, initialFruitSizes[id] * 0.49, {
-        restitution: 0.4,
+        restitution: 0.75,
         friction: 0.06,
         frictionAir: 0.035,
         density: 0.001,
@@ -106,6 +127,17 @@ export default function PhysicsCanvas({ fruits, onFruitClick, randomLayout = fal
       })
     );
     bodies.forEach((body, i) => bodiesRef.current.set(placements[i].id, body));
+
+    if (ambientDrift) {
+      bodies.forEach((body) => {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = DRIFT_SPEED * (0.6 + Math.random() * 0.8);
+        body.driftTargetX = Math.cos(angle) * speed;
+        body.driftTargetY = Math.sin(angle) * speed;
+        body.driftChangeAt =
+          Date.now() + DRIFT_CHANGE_MIN_MS + Math.random() * (DRIFT_CHANGE_MAX_MS - DRIFT_CHANGE_MIN_MS);
+      });
+    }
 
     const walls = buildWalls(width, height);
     wallsRef.current = walls;
@@ -115,14 +147,99 @@ export default function PhysicsCanvas({ fruits, onFruitClick, randomLayout = fal
     const runner = Runner.create();
     Runner.run(runner, engine);
 
+    // A collision (with a wall or another fruit) is what's allowed to
+    // redirect a body — not per-frame randomness. That's what makes it
+    // read as "drifting steadily, then bouncing" instead of "jittering."
+    const handleCollision = (event) => {
+      event.pairs.forEach((pair) => {
+        [pair.bodyA, pair.bodyB].forEach((body) => {
+          if (body.label === 'wall') return;
+          body.driftNeedsRedirect = true;
+        });
+      });
+    };
+    if (ambientDrift) {
+      Events.on(engine, 'collisionStart', handleCollision);
+    }
+
+    const applyDrift = () => {
+      const now = Date.now();
+      bodies.forEach((body) => {
+        if (body.isStatic) return; // being dragged right now
+
+        // Fallback in case a body coasts for a long time without hitting
+        // anything — still pick a new heading occasionally.
+        if (!body.driftChangeAt || now >= body.driftChangeAt) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = DRIFT_SPEED * (0.6 + Math.random() * 0.8);
+          body.driftTargetX = Math.cos(angle) * speed;
+          body.driftTargetY = Math.sin(angle) * speed;
+          body.driftChangeAt =
+            now + DRIFT_CHANGE_MIN_MS + Math.random() * (DRIFT_CHANGE_MAX_MS - DRIFT_CHANGE_MIN_MS);
+        }
+
+        // Only a gentle nudge toward the heading — weak enough that a
+        // wall/fruit bounce isn't immediately corrected away.
+        Body.applyForce(body, body.position, {
+          x: body.mass * DRIFT_STEER_GAIN * (body.driftTargetX - body.velocity.x),
+          y: body.mass * DRIFT_STEER_GAIN * (body.driftTargetY - body.velocity.y),
+        });
+        // No per-frame spin here — angularVelocity only changes when
+        // `driftNeedsRedirect` fires below, i.e. on an actual collision.
+      });
+    };
+    if (ambientDrift) {
+      Events.on(engine, 'beforeUpdate', applyDrift);
+    }
+
     const syncFrame = () => {
       bodiesRef.current.forEach((body, id) => {
+        if (body.driftNeedsRedirect) {
+          // The solver just resolved a bounce this step, so velocity here
+          // already reflects the new direction — adopt it as the heading
+          // instead of steering back to whatever it was doing before.
+          const speed = Math.hypot(body.velocity.x, body.velocity.y);
+          const angle =
+            speed > 0.05 ? Math.atan2(body.velocity.y, body.velocity.x) : Math.random() * Math.PI * 2;
+          const targetSpeed = DRIFT_SPEED * (0.6 + Math.random() * 0.8);
+          body.driftTargetX = Math.cos(angle) * targetSpeed;
+          body.driftTargetY = Math.sin(angle) * targetSpeed;
+          body.driftChangeAt =
+            Date.now() + DRIFT_CHANGE_MIN_MS + Math.random() * (DRIFT_CHANGE_MAX_MS - DRIFT_CHANGE_MIN_MS);
+          // A fresh spin impulse from the impact, left to decay naturally
+          // (frictionAir) until the next collision — not a target that's
+          // held indefinitely, so it settles down between bumps.
+          Body.setAngularVelocity(body, randomSpin());
+          body.driftNeedsRedirect = false;
+        }
+
         if (Math.abs(body.angularVelocity) > MAX_ANGULAR_VELOCITY) {
           Body.setAngularVelocity(
             body,
             MAX_ANGULAR_VELOCITY * Math.sign(body.angularVelocity)
           );
         }
+
+        // Safety net: resolving many severely-overlapping bodies at once
+        // (e.g. several fruits jammed together) can occasionally give
+        // Matter's solver a huge separation velocity for an instant. Cap
+        // speed and re-pin position every frame so that never reads as
+        // "shot off the screen."
+        const speed = Math.hypot(body.velocity.x, body.velocity.y);
+        if (speed > MAX_RELEASE_SPEED * 1.5) {
+          const scale = (MAX_RELEASE_SPEED * 1.5) / speed;
+          Body.setVelocity(body, { x: body.velocity.x * scale, y: body.velocity.y * scale });
+        }
+        if (!body.isStatic) {
+          const r = body.circleRadius;
+          const { width: cw, height: ch } = canvasSizeRef.current;
+          const x = clamp(body.position.x, r, Math.max(r, cw - r));
+          const y = clamp(body.position.y, r, Math.max(r, ch - r));
+          if (x !== body.position.x || y !== body.position.y) {
+            Body.setPosition(body, { x, y });
+          }
+        }
+
         const el = elementRefs.current.get(id);
         if (!el) return;
         const s = fruitSizesRef.current[id] ?? sizeRef.current;
@@ -138,12 +255,13 @@ export default function PhysicsCanvas({ fruits, onFruitClick, randomLayout = fal
       if (!entry) return;
       const { width: w, height: h } = entry.contentRect;
       if (w === 0 || h === 0) return;
+      canvasSizeRef.current = { width: w, height: h };
 
       World.remove(engine.world, wallsRef.current);
       wallsRef.current = buildWalls(w, h);
       World.add(engine.world, wallsRef.current);
 
-      const newSize = computeSize(w, h);
+      const newSize = computeSize(w, h, fruits.length);
       sizeRef.current = newSize;
 
       const newFruitSizes = {};
@@ -167,6 +285,10 @@ export default function PhysicsCanvas({ fruits, onFruitClick, randomLayout = fal
     return () => {
       resizeObserver.disconnect();
       Events.off(engine, 'afterUpdate', syncFrame);
+      if (ambientDrift) {
+        Events.off(engine, 'collisionStart', handleCollision);
+        Events.off(engine, 'beforeUpdate', applyDrift);
+      }
       Runner.stop(runner);
       World.clear(engine.world, false);
       Engine.clear(engine);
@@ -187,7 +309,53 @@ export default function PhysicsCanvas({ fruits, onFruitClick, randomLayout = fal
     const s = fruitSizesRef.current[drag.id] ?? sizeRef.current;
     const targetX = clamp(x + drag.offsetX, s / 2, Math.max(s / 2, rect.width - s / 2));
     const targetY = clamp(y + drag.offsetY, s / 2, Math.max(s / 2, rect.height - s / 2));
+
+    // A dragged body is `isStatic`, so Matter treats it as immovable and
+    // won't give whatever it bumps into a real bounce (only a quiet
+    // positional nudge). Shove overlapping bodies out by hand, using how
+    // fast the drag itself is moving, so barging into a fruit while
+    // dragging still knocks it away like a real collision would.
+    const lastSample = drag.history[drag.history.length - 1];
+    const dt = lastSample ? performance.now() - lastSample.t : 0;
+    const dragSpeed =
+      dt > 0
+        ? Math.hypot(targetX - lastSample.x, targetY - lastSample.y) / dt * 16.67
+        : 0;
+
     Body.setPosition(drag.body, { x: targetX, y: targetY });
+
+    if (dragSpeed > 0.05) {
+      const dragRadius = drag.body.circleRadius;
+      bodiesRef.current.forEach((otherBody, otherId) => {
+        if (otherId === drag.id || otherBody.isStatic) return;
+        const dx = otherBody.position.x - targetX;
+        const dy = otherBody.position.y - targetY;
+        const dist = Math.hypot(dx, dy) || 0.001;
+        const minDist = dragRadius + otherBody.circleRadius;
+        if (dist >= minDist) return;
+
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const otherRadius = otherBody.circleRadius;
+        // Clamp to the canvas bounds — otherwise shoving a fruit that's
+        // wedged against a wall/corner can teleport it clean off-screen,
+        // since this bypasses Matter's own wall-collision resolution.
+        const pushedX = clamp(
+          otherBody.position.x + nx * (minDist - dist),
+          otherRadius,
+          Math.max(otherRadius, rect.width - otherRadius)
+        );
+        const pushedY = clamp(
+          otherBody.position.y + ny * (minDist - dist),
+          otherRadius,
+          Math.max(otherRadius, rect.height - otherRadius)
+        );
+        Body.setPosition(otherBody, { x: pushedX, y: pushedY });
+        const shove = Math.max(dragSpeed, DRAG_SHOVE_MIN_SPEED);
+        Body.setVelocity(otherBody, { x: nx * shove, y: ny * shove });
+        otherBody.driftNeedsRedirect = true;
+      });
+    }
 
     const now = performance.now();
     drag.history.push({ t: now, x: targetX, y: targetY });
@@ -226,7 +394,7 @@ export default function PhysicsCanvas({ fruits, onFruitClick, randomLayout = fal
     Body.setVelocity(drag.body, { x: vx, y: vy });
     Body.setAngularVelocity(
       drag.body,
-      clamp(vx * SPIN_FROM_RELEASE, -MAX_ANGULAR_VELOCITY, MAX_ANGULAR_VELOCITY)
+      clamp(vx * SPIN_FROM_RELEASE, -RELEASE_SPIN_MAX, RELEASE_SPIN_MAX)
     );
 
     const el = elementRefs.current.get(drag.id);
