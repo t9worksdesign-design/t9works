@@ -73,7 +73,14 @@ export default function Sidebar() {
           ))}
         </ul>
 
-        <p className="sidebar__account">@t9_works</p>
+        <a
+          className="sidebar__account"
+          href="https://www.instagram.com/t9_works/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          @t9_works
+        </a>
       </div>
     </nav>
   );
