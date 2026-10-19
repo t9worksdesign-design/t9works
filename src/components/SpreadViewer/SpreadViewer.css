@@ -26,37 +26,167 @@
   background: #ffffff;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .spread-viewer__image {
-    animation: spread-unfold 1.1s cubic-bezier(0.65, 0, 0.35, 1);
-    transform-origin: center center;
+/* Page-turn overlay: sits exactly on top of the spread image while a
+   page is being turned. Two static halves hold what is under the moving
+   sheet; the sheet itself is double-sided and rotates around the spine. */
+.book-flip {
+  position: absolute;
+  z-index: 1;
+  perspective: 2600px;
+  perspective-origin: 50% 50%;
+}
+
+.book-flip__half,
+.book-flip__face {
+  background-color: #ffffff;
+  background-repeat: no-repeat;
+  background-size: 200% 100%;
+}
+
+.book-flip__half {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+}
+
+.book-flip__half--left {
+  left: 0;
+  background-position: 0 0;
+}
+
+.book-flip__half--right {
+  left: 50%;
+  background-position: 100% 0;
+}
+
+.book-flip__page {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation-duration: 1.2s;
+  animation-timing-function: cubic-bezier(0.5, 0.05, 0.3, 1);
+  animation-fill-mode: forwards;
+}
+
+.book-flip__face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.book-flip__face--back {
+  transform: rotateY(180deg);
+}
+
+/* next: the right-hand page lifts, turns over the spine, lands on the left */
+.book-flip--next .book-flip__page {
+  left: 50%;
+  transform-origin: left center;
+  animation-name: page-turn-next;
+}
+
+/* prev: the left-hand page lifts, turns over the spine, lands on the right */
+.book-flip--prev .book-flip__page {
+  left: 0;
+  transform-origin: right center;
+  animation-name: page-turn-prev;
+}
+
+@keyframes page-turn-next {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(-180deg);
   }
 }
 
-@keyframes spread-unfold {
-  0% {
-    transform: perspective(1400px) rotateY(60deg) scaleX(0.35);
+@keyframes page-turn-prev {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(180deg);
+  }
+}
+
+/* Light shading so the sheet reads as paper catching light as it turns:
+   the face darkens toward the spine while it rises and flattens out. */
+.book-flip__face::after,
+.book-flip__half::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  animation-duration: 1.2s;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.book-flip--next .book-flip__face--front::after,
+.book-flip--next .book-flip__face--back::after,
+.book-flip--next .book-flip__half--right::after {
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0) 70%);
+}
+
+.book-flip--prev .book-flip__face--front::after,
+.book-flip--prev .book-flip__face--back::after,
+.book-flip--prev .book-flip__half--left::after {
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0) 70%);
+}
+
+.book-flip__face--front::after {
+  animation-name: shade-rising;
+}
+
+.book-flip__face--back::after {
+  animation-name: shade-settling;
+}
+
+.book-flip--next .book-flip__half--right::after,
+.book-flip--prev .book-flip__half--left::after {
+  animation-name: shade-uncovering;
+}
+
+@keyframes shade-rising {
+  from {
     opacity: 0;
-    filter: blur(0px);
   }
-  35% {
-    filter: blur(14px);
-  }
-  75% {
-    filter: blur(5px);
-  }
-  100% {
-    transform: perspective(1400px) rotateY(0deg) scaleX(1);
+  to {
     opacity: 1;
-    filter: blur(0px);
+  }
+}
+
+@keyframes shade-settling {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes shade-uncovering {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 
 .spread-viewer__arrow {
   position: absolute;
+  z-index: 2;
   top: 50%;
   transform: translateY(-50%);
   font-size: 32px;
+  font-weight: 500;
   line-height: 1;
   color: var(--ink-quiet);
   padding: clamp(8px, 1.5vw, 16px);
@@ -76,7 +206,8 @@
 }
 
 .spread-viewer__index {
-  font-size: 11px;
+  font-size: 13px;
+  font-weight: 500;
   letter-spacing: 0.08em;
   color: var(--ink-quiet);
 }
