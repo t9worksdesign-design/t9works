@@ -11,6 +11,21 @@ const COLOR_LABEL = {
   purple: 'PURPLE',
 };
 
+// Rendered twice: under the logo on desktop, and as the last item of the
+// dropdown on mobile (the top bar has no room for it). CSS shows one.
+function AccountLink({ className }) {
+  return (
+    <a
+      className={`sidebar__account ${className}`}
+      href="https://www.instagram.com/t9_works/"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      @t9_works
+    </a>
+  );
+}
+
 // Fixed vertical nav on desktop. Below the mobile breakpoint (see
 // Sidebar.css) it collapses into a top bar with a hamburger toggle that
 // reveals the same links as a dropdown, so there's only one nav to keep
@@ -26,11 +41,14 @@ export default function Sidebar() {
   return (
     <nav className={`sidebar ${isOpen ? 'sidebar--open' : ''}`} aria-label="Main navigation">
       <div className="sidebar__bar">
-        <NavLink to="/" className="sidebar__title">
-          Beneath,
-          <br />
-          the Peel.
-        </NavLink>
+        <div className="sidebar__brand">
+          <NavLink to="/" className="sidebar__title">
+            Beneath,
+            <br />
+            the Peel.
+          </NavLink>
+          <AccountLink className="sidebar__account--brand" />
+        </div>
 
         <button
           type="button"
@@ -73,14 +91,7 @@ export default function Sidebar() {
           ))}
         </ul>
 
-        <a
-          className="sidebar__account"
-          href="https://www.instagram.com/t9_works/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          @t9_works
-        </a>
+        <AccountLink className="sidebar__account--menu" />
       </div>
     </nav>
   );

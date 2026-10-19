@@ -33,14 +33,17 @@
 .sidebar__links {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 0;
   gap: clamp(36px, 6vh, 64px);
 }
 
+.sidebar__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
 .sidebar__account {
-  margin: auto 0 0;
-  padding-left: 14px;
   font-size: 11px;
   letter-spacing: 0.06em;
   color: var(--ink-quiet);
@@ -49,6 +52,10 @@
 
 .sidebar__account:hover {
   color: var(--ink);
+}
+
+.sidebar__account--menu {
+  display: none;
 }
 
 .sidebar__group {
@@ -131,7 +138,6 @@
   }
 
   .sidebar__links {
-    flex: none;
     max-height: 0;
     overflow: hidden;
     gap: 0;
@@ -155,8 +161,12 @@
     padding-top: 16px;
   }
 
-  .sidebar__account {
-    margin: 0;
+  .sidebar__account--brand {
+    display: none;
+  }
+
+  .sidebar__account--menu {
+    display: block;
     width: 100%;
     padding-top: 16px;
   }
