@@ -56,6 +56,11 @@ export default function Sidebar() {
               ALL
             </NavLink>
           </li>
+          <li>
+            <NavLink to="/video" className="sidebar__link">
+              VIDEO
+            </NavLink>
+          </li>
         </ul>
 
         <ul className="sidebar__group">

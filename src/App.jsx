@@ -4,6 +4,7 @@ import Home from './pages/Home/Home';
 import Category from './pages/Category/Category';
 import All from './pages/All/All';
 import FruitDetail from './pages/FruitDetail/FruitDetail';
+import Video from './pages/Video/Video';
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
           <Route path="/all" element={<All />} />
           <Route path="/category/:color" element={<Category />} />
           <Route path="/fruit/:id" element={<FruitDetail />} />
+          <Route path="/video" element={<Video />} />
         </Routes>
       </main>
     </div>
