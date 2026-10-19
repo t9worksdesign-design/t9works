@@ -5,6 +5,10 @@ import './Video.css';
 // or change the path here.
 const VIDEO_SRC = '/videos/exhibition.mp4';
 
+// Static QR (public/images/video-qr.svg) pointing straight at this URL, so
+// it keeps working without any QR service in between.
+const YOUTUBE_URL = 'https://youtu.be/ZMje26vjf1o';
+
 // Muted autoplay is the only autoplay browsers allow without a click, so
 // the video starts silent and loops; SOUND unmutes it (a click counts as
 // the required user gesture).
@@ -35,15 +39,27 @@ export default function Video() {
         />
       </div>
 
-      <div className="video-page__controls">
-        <button type="button" onClick={toggleSound}>
-          SOUND {muted ? 'OFF' : 'ON'}
-        </button>
-        {document.fullscreenEnabled && (
-          <button type="button" onClick={enterFullscreen}>
-            FULLSCREEN
+      <div className="video-page__footer">
+        <div className="video-page__controls">
+          <button type="button" onClick={toggleSound}>
+            SOUND {muted ? 'OFF' : 'ON'}
           </button>
-        )}
+          {document.fullscreenEnabled && (
+            <button type="button" onClick={enterFullscreen}>
+              FULLSCREEN
+            </button>
+          )}
+        </div>
+
+        <a
+          className="video-page__qr"
+          href={YOUTUBE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span className="video-page__qr-label">WATCH ON YOUTUBE</span>
+          <img src="/images/video-qr.svg" alt="QR code linking to the video on YouTube" />
+        </a>
       </div>
     </div>
   );

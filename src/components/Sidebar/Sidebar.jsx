@@ -72,6 +72,8 @@ export default function Sidebar() {
             </li>
           ))}
         </ul>
+
+        <p className="sidebar__account">@t9_works</p>
       </div>
     </nav>
   );
